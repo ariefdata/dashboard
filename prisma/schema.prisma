@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Simple auth for MVP/Self-hosted
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  workspaces WorkspaceMember[]
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  members   WorkspaceMember[]
+  uploads   Upload[]
+  metrics            UnifiedMetric[]
+  executiveSnapshots ExecutiveSnapshot[]
+  channelSnapshots   ChannelPerformanceSnapshot[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String    @default("MEMBER") // OWNER, ADMIN, MEMBER
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+// Provenance: Track every file ingestion
+model Upload {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  originalName   String
+  storagePath    String
+  fileType       String   // CSV, XLSX
+  platform       String   // SHOPEE, LAZADA, TIKTOK
+  reportType     String   // OVERVIEW, ADS
+  status         String   // PENDING, PROCESSED, FAILED
+  errorLog       String?
+  validationResult String? // JSON blob for ValidationResult: { is_valid, warnings: [] }
+  rowCount       Int      @default(0)
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+  
+  // JSON blob for storing heuristics: { platform_confidence, signals, etc }
+  ingestionContext String? 
+
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  metrics        UnifiedMetric[]
+}
+
+// Canonical Data Store: The Core Fact Table
+model UnifiedMetric {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  uploadId      String
+  
+  date          DateTime
+  platform      String   // SHOPEE, LAZADA, TIKTOK
+  
+  // Strict Granularity Control
+  // AGGREGATE_PERIOD, DAILY, SKU, CAMPAIGN, CREATIVE
+  granularity   String   
+  
+  // JSON Context for Epistemic Correctness
+  // { source: 'ads'|'organic'|'blended', report_type: 'overview'|'ads', confidence: 'low'|'medium'|'high' }
+  metricContext String   
+  
+  // Flexible Metrics Storage
+  // { revenue: 100, spend: 50, impressions: 1000, ... }
+  metrics       String   
+  
+  // Dimensions Storage
+  // { sku: 'A123', campaign_id: 99, creative_id: 88, channel: 'search' }
+  dimensions    String?  
+
+  createdAt     DateTime @default(now())
+  
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  upload        Upload    @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, date, platform, granularity])
+  @@index([uploadId])
+}
+
+// Derived Snapshots for Performance
+// Executive Snapshot: High-level overview
+model ExecutiveSnapshot {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  date          DateTime // Daily snapshot
+  
+  revenue       Decimal  @default(0)
+  spend         Decimal  @default(0)
+  orders        Int      @default(0)
+  roas          Decimal? // Computable only if spend > 0
+  
+  // Aggregated confidence context
+  confidence    String   // HIGH, MEDIUM, LOW
+  
+  createdAt     DateTime @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, date])
+}
+
+// Channel Performance Snapshot: Platform breakdown
+model ChannelPerformanceSnapshot {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  date          DateTime
+  platform      String   // SHOPEE, LAZADA, TIKTOK
+  
+  revenue       Decimal  @default(0)
+  spend         Decimal  @default(0)
+  orders        Int      @default(0)
+  impressions   Int      @default(0)
+  clicks        Int      @default(0)
+  
+  roas          Decimal?
+  cvr           Decimal?
+  ctr           Decimal?
+  
+  createdAt     DateTime @default(now())
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, date, platform])
+}
+
+// Mapping Rules Persistence (Optional but recommended for consistency)
+model ColumnMapping {
+  id          String   @id @default(cuid())
+  workspaceId String
+  platform    String
+  reportType  String
+  
+  // Dictionary: { "canonical_metric": ["raw_col_1", "raw_col_2"] }
+  mapping     String   
+  
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([workspaceId, platform, reportType])
+}

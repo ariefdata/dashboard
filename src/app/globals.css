@@ -1,26 +1,86 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Javanese Light Mode (Warm, Parchment-like) */
+    --background: 30 20% 95%; /* Cream/Off-white */
+    --foreground: 20 10% 15%; /* Dark Brown-Black */
+
+    --card: 30 20% 98%;
+    --card-foreground: 20 10% 15%;
+
+    --popover: 30 20% 98%;
+    --popover-foreground: 20 10% 15%;
+
+    /* Primary: Deep Earthy Brown */
+    --primary: 25 35% 25%; 
+    --primary-foreground: 35 30% 90%;
+
+    /* Secondary: Muted Clay/Sand */
+    --secondary: 30 25% 85%;
+    --secondary-foreground: 25 35% 25%;
+
+    /* Muted: Subtle Gray-Brown */
+    --muted: 30 15% 90%;
+    --muted-foreground: 25 15% 40%;
+
+    /* Accent: Golden/Amber (Kraton Gold elements) */
+    --accent: 35 80% 60%;
+    --accent-foreground: 20 10% 15%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 30 15% 85%;
+    --input: 30 15% 85%;
+    --ring: 25 35% 25%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Javanese Dark Mode (Night, Calm, Premium) */
+    --background: 20 10% 10%; /* Very Deep Brownish Black */
+    --foreground: 35 20% 90%; /* Soft Cream */
+
+    --card: 20 10% 13%;
+    --card-foreground: 35 20% 90%;
+
+    --popover: 20 10% 13%;
+    --popover-foreground: 35 20% 90%;
+
+    /* Primary: Rich Coffee/Wood */
+    --primary: 25 40% 35%;
+    --primary-foreground: 35 30% 90%;
+
+    /* Secondary: Dark Sand */
+    --secondary: 20 10% 20%;
+    --secondary-foreground: 35 20% 80%;
+
+    /* Muted: Dark Gray-Brown */
+    --muted: 20 10% 20%;
+    --muted-foreground: 35 15% 60%;
+
+    /* Accent: Muted Gold */
+    --accent: 35 60% 50%;
+    --accent-foreground: 20 10% 10%;
+
+    --destructive: 0 60% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 35 60% 50%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
